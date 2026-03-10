@@ -109,6 +109,15 @@ The idea is that you are a completely autonomous researcher trying things out. I
 
 **Crashes**: If a run crashes (OOM, or a bug, or etc.), use your judgment: If it's something dumb and easy to fix (e.g. a typo, a missing import), fix it and re-run. If the idea itself is fundamentally broken, just skip it, log "crash" as the status in the tsv, and move on.
 
+**Checkpoint preservation**: When running on remote/ephemeral servers (cloud GPUs, spot instances, etc.), model weights exist only on that machine. If the server is terminated, all training progress is lost. To prevent this:
+
+1. **Download checkpoints at milestones**: After every significant improvement (new best val metric), download the checkpoint file to the local machine. Use `scp` or equivalent to copy the weights to a local backup directory (e.g. `~/Downloads/<project>_backup/`).
+2. **Download periodically**: Even without improvements, download the latest checkpoint at least once per session or every ~10 experiments — whichever comes first.
+3. **Save alongside results**: When downloading, also grab `results.tsv`, the current `train.py`, and `run.log` so the full experiment state is recoverable.
+4. **Name checkpoints clearly**: When saving multiple milestones locally, use descriptive names (e.g. `checkpoint_0.146_ep38.pt`) so you can identify which is which.
+
+This is critical. A lost checkpoint means all accumulated warm-start training progress is gone and must be retrained from scratch, which can waste hours of GPU time.
+
 **NEVER STOP**: Once the experiment loop has begun (after the initial setup), do NOT pause to ask the human if you should continue. Do NOT ask "should I keep going?" or "is this a good stopping point?". The human might be asleep, or gone from a computer and expects you to continue working *indefinitely* until you are manually stopped. You are autonomous. If you run out of ideas, think harder — read papers referenced in the code, re-read the in-scope files for new angles, try combining previous near-misses, try more radical architectural changes. The loop runs until the human interrupts you, period.
 
 As an example use case, a user might leave you running while they sleep. If each experiment takes you ~5 minutes then you can run approx 12/hour, for a total of about 100 over the duration of the average human sleep. The user then wakes up to experimental results, all completed by you while they slept!
